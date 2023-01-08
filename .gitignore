@@ -1,0 +1,9 @@
+terraform.tfstate
+local_key.tf 
+.terraform
+demo-instance-user-data-0*
+*lock*
+hosts
+sa-key.json
+defaults
+*.json

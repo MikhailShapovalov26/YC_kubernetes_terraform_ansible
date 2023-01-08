@@ -1,0 +1,8 @@
+---
+- name: install gitlab server
+  hosts: nodes
+  become: yes
+  become_user: root
+  remote_user: mikhail
+  roles:
+    - gitlab_server

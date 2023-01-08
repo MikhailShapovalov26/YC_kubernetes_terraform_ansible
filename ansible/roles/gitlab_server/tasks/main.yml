@@ -1,0 +1,43 @@
+---
+- name: system update
+  apt:
+    name: '*'
+    state: latest
+    update_cache: yes
+    force_apt_get: yes
+
+- name: install packer curl oppenssh-server tzdata perl 
+  apt: 
+    name: '{{ padependent_packages }}'
+    state: present
+    update_cache: yes
+    
+- name: Add repository gitlab packer
+  shell: '{{ shell_scrip }}'
+
+- name: system update
+  apt:
+    name: '*'
+    state: latest
+    update_cache: yes
+    force_apt_get: yes
+    
+- name: Install gitlab 
+  apt: 
+    name:  gitlab-{{gitlab_distribution}}
+    state: present
+    update_cache: yes
+
+- name: copy gitlab configuration file
+  template:
+    src: gitlab.rb.j2
+    dest: /etc/gitlab/gitlab.rb
+    owner: root
+    group: root
+    mode: '0600'
+    backup: yes
+
+- name: Reconfigure GitLab (first run).
+  command: >
+    gitlab-ctl reconfigure
+  failed_when: false
