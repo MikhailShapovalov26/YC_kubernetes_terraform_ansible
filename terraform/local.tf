@@ -19,12 +19,14 @@ locals {
     }
   }
   Foo = element(compact(one(module.instancies[*].instancies.external_ip_address)), 0)
+  # Foo_kuber = module.kubernetes_node_group.ip_adress
   zones = {
     "msh762.ru" = {
       name   = "msh762-zone",
       public = true,
       records = [
-        # { name = "", type = "A", ttl = 200, records = [local.Foo, ] },
+        { name = "", type = "A", ttl = 30, records = [local.Foo, ] },
+        { name = "*.infra", type = "A", ttl = 30, records = [local.Foo, ] },
         { name = "gitlab", type = "A", ttl = 30, records = [local.Foo, ] },
       ]
     }

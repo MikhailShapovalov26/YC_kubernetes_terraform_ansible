@@ -31,5 +31,8 @@ output "json_key" {
 
   })}"
   sensitive = true
-  
 }
+
+output "ip_kuber" {
+    value = module.kubernetes_node_group.ip_adress
+  }
