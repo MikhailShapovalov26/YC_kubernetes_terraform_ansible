@@ -36,7 +36,7 @@ https://cloud.yandex.ru/docs/cli/quickstart#initialize </br>
         --rule 'direction=ingress,protocol=icmp,v4-cidrs=[10.0.0.0/8,192.168.0.0/16,172.16.0.0/12]' 
 После всех манипуляций с терраформом 
 
-        yc managed-kubernetes cluster get-credentials --name=cluster --external
+        yc managed-kubernetes cluster get-credentials --name=kube-infra --external
 
         Context 'yc-cluster' was added as default to kubeconfig '/home/mikhail/.kube/config'.
         Check connection to cluster using 'kubectl cluster-info --kubeconfig /home/mikhail/.kube/config'.
@@ -88,13 +88,12 @@ https://cloud.yandex.ru/docs/cli/quickstart#initialize </br>
 
         yc managed-kubernetes cluster get-credentials --name=kube-infra --external  
 
-        kubectl cluster-info                                                                                                                                         master*
+        kubectl cluster-info                                                             
         Kubernetes control plane is running at https
 
-        kubectl create namespace yc-alb-ingress                                                                                                                      master*
-        namespace/yc-alb-ingress created
+        kubectl create namespace yc-alb-ingress namespace/yc-alb-ingress created
 
-        helm pull oci://cr.yandex/yc/yc-alb-ingress-controller-chart \                                                                                               master*
+        helm pull oci://cr.yandex/yc/yc-alb-ingress-controller-chart \
         --version=v0.1.3 \
         --untar \
         --untardir=charts
@@ -106,13 +105,46 @@ https://cloud.yandex.ru/docs/cli/quickstart#initialize </br>
         export FOLDER_ID=$(yc config get folder-id)
         export CLUSTER_ID=$(yc managed-kubernetes cluster get kube-infra | head -n 1 | awk -F ': ' '{print $2}')
 
-        helm install \
-        --create-namespace \
-        --namespace yc-alb-ingress \
-        --set folderId=$FOLDER_ID \
-        --set clusterId=$CLUSTER_ID \
-        --set-file saKeySecretKey=sa-key.json \
-        yc-alb-ingress-controller ./charts/yc-alb-ingress-controller-chart/
+        helm install --create-namespace --namespace yc-alb-ingress --set folderId=$FOLDER_ID --set clusterId=$CLUSTER_ID --set-file saKeySecretKey=sa-key.json yc-alb-ingress-controller ./charts/yc-alb-ingress-controller-chart/
 
         # проверяем, что ресурсы создались
         kubectl -n yc-alb-ingress get all
+
+Проверить как IP адреса заданы
+
+        yc vpc address list
+        +----------------------+------+--------------+----------+------+
+        |          ID          | NAME |   ADDRESS    | RESERVED | USED |
+        +----------------------+------+--------------+----------+------+
+        | e9b0g9tjelqndndbe5sk |      | 51.250.0.22  | false    | true |
+        | e9beitf6m671pipl0geh |      | 51.250.94.39 | false    | true |
+        +----------------------+------+--------------+----------+------+
+
+Проверить состояние IP clustera
+
+        kubectl get svc
+        NAME         TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+        kubernetes   ClusterIP   10.96.128.1   <none>        443/TCP   63m
+
+## Ingress
+
+        kubectl create namespace httpbin
+        namespace/httpbin created
+
+        kubectl -n httpbin apply -f manifests/httpbin.yaml
+                deployment.apps/httpbin unchanged
+                service/httpbin unchanged
+                ingress.networking.k8s.io/httpbin created
+
+Балансировщик создаётся в течение 3-5 минут. Можно проверить командой:
+
+        yc application-load-balancer load-balancer list
+
+Создадим сертификат на доменное имя, которое использовали ранее для приложения httpbin:
+
+        yc certificate-manager certificate request \
+        --name kube-infra \
+        --domains "*.infra.msh762.ru" \
+        --challenge dns 
+
+        yc dns zone add-records --name msh762-zone --record "_acme-challenge.infra.msh762.ru. 600 CNAME <id_Заменить>.cm.yandexcloud.net."

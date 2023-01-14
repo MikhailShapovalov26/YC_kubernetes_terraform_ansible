@@ -7,6 +7,14 @@ locals {
       ]
     }
   }
+  load_balance = {
+    "load_balance" = {
+      type_balance = [
+        { name = "balancekuber", zone = local.zone, subnet_id = element(compact(one(module.vpcs.*.vpcs.subnet_id)), 0), name_listen = "namelisten", },
+      ]
+
+    }
+  }
   family         = "fd8autg36kchufhej85b"
   user_data_file = "demo-instance-user-data-0.yaml"
   zone_subnet    = element(compact(one(module.vpcs.*.vpcs.subnet_zone)), 0)
@@ -18,15 +26,15 @@ locals {
       ]
     }
   }
-  Foo = element(compact(one(module.instancies[*].instancies.external_ip_address)), 0)
-  # Foo_kuber = module.kubernetes_node_group.ip_adress
+  Foo       = element(compact(one(module.instancies[*].instancies.external_ip_address)), 0)
+  Foo_kuber = one(module.application_load_balancer.*.load_balance.external_ip)
   zones = {
     "msh762.ru" = {
       name   = "msh762-zone",
       public = true,
       records = [
         { name = "", type = "A", ttl = 30, records = [local.Foo, ] },
-        { name = "*.infra", type = "A", ttl = 30, records = [local.Foo, ] },
+        { name = "*.infra", type = "A", ttl = 30, records = [local.Foo_kuber, ] },
         { name = "gitlab", type = "A", ttl = 30, records = [local.Foo, ] },
       ]
     }

@@ -22,7 +22,7 @@ resource "yandex_kubernetes_node_group" "node_group" {
     }
 
     scheduling_policy {
-      preemptible = false
+      preemptible = true
     }
     metadata = {
     ssh-keys = "${var.gce_ssh_user}:${file(var.gce_ssh_pub_key_file)}"

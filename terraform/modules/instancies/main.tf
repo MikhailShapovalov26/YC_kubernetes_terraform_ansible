@@ -29,4 +29,7 @@ resource "yandex_compute_instance" "instance" {
       file("./data/user-data/${each.value.user}")
     )
   }
+  scheduling_policy {
+    preemptible = true
+  }
 }

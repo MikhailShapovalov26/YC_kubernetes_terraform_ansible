@@ -11,6 +11,15 @@ module "vpcs" {
   for_each     = local.vpcs
   type_vpcs    = lookup(each.value, "type_vpcs")
 }
+module "application_load_balancer" {
+  source       = "./modules/application_load_balancer"
+  for_each     = local.load_balance
+  type_balance = lookup(each.value, "type_balance")
+  network_id   = one(module.vpcs.*.vpcs.network_id)
+  depends_on = [
+    module.vpcs
+  ]
+}
 module "instancies" {
   source         = "./modules/instancies"
   for_each       = local.instancies
@@ -37,6 +46,7 @@ module "inventory" {
     module.instancies
   ]
 }
+
 module "k8s_security_group" {
   source     = "./modules/security_group"
   network_id = one(module.vpcs.*.vpcs.network_id)
