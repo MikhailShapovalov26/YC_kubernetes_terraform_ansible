@@ -1,0 +1,69 @@
+- name: Update APT
+  apt:
+    update_cache: yes
+    upgrade: dist
+    cache_valid_time: 3600
+    force_apt_get: true
+
+- name: Create a dedicated sudo entry file for the user.
+  file:
+    path: /etc/sudoers.d/{{ ansible_user }}
+    state: touch
+    mode: '0600'
+
+- name: Setting up Sudo without Password for user {{ ansible_user }}
+  lineinfile:
+    dest: /etc/sudoers.d/{{ ansible_user }}
+    line: '{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
+- name: Install containerd run time
+  apt:
+    name:
+      - curl
+      - gnupg2
+      - software-properties-common 
+      - apt-transport-https 
+      - ca-certificates
+    state: latest
+
+- name: Add Docker GPG apt Key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Update apt and install containerd.io
+  apt:
+    name: containerd.io
+    state: latest
+    update_cache: true
+
+- name: Configure containerd
+  file:
+    path: /etc/containerd
+    state: directory
+
+- name: Configure containerd
+  shell: /usr/bin/containerd config default > /etc/containerd/config.toml
+
+- name: Creating containerd Config file
+  copy:
+    dest: /etc/crictl.yaml
+    content: |
+      runtime-endpoint: unix:///run/containerd/containerd.sock
+      image-endpoint: unix:///run/containerd/containerd.sock
+      timeout: 2
+      debug: false
+
+
+- name: Enable containerd service, and start it.
+  systemd: 
+    name: containerd
+    state: restarted
+    enabled: yes
+    daemon-reload: yes

@@ -11,15 +11,17 @@ module "vpcs" {
   for_each     = local.vpcs
   type_vpcs    = lookup(each.value, "type_vpcs")
 }
-module "application_load_balancer" {
-  source       = "./modules/application_load_balancer"
-  for_each     = local.load_balance
-  type_balance = lookup(each.value, "type_balance")
+module "yc_alb" {
+  source = "./modules/yc_alb"
+  for_each = local.targets
+  type_targets = lookup(each.value, "type_targets")
+  zone=local.zone
   network_id   = one(module.vpcs.*.vpcs.network_id)
   depends_on = [
     module.vpcs
   ]
 }
+
 module "instancies" {
   source         = "./modules/instancies"
   for_each       = local.instancies

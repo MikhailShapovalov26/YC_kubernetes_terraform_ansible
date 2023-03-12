@@ -7,7 +7,7 @@ resource "yandex_kubernetes_node_group" "node_group" {
     platform_id = "standard-v2"
 
     network_interface {
-      nat                = true
+      nat                = false
       subnet_ids         = ["${var.subnet_ids}"]
     }
 

@@ -1,12 +1,14 @@
-variable "type_balance" {
+variable "type_targets" {
   default = []
 }
-variable "typebalance_jsonencoded" {
+variable "typetarget_jsonencoded" {
   description = "List of map"
   type        = string
   default     = null
 }
 variable "network_id" {
+  default = null 
+}
+variable "zone" {
   default = null
-  
 }

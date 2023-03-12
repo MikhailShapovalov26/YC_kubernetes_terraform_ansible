@@ -1,0 +1,102 @@
+---
+- name: Update APT
+  apt:
+    update_cache: yes
+
+- name: Install packeges
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - wget
+      - git
+      - software-properties-common
+      - gnupg-agent
+
+- name: Swap-Off
+  shell: swapoff -a
+
+- name: Create a empty file for containerd module.
+  copy:
+    content: ""
+    dest: /etc/modules-load.d/containerd.conf
+    force: no
+
+- name: Configure module for containerd.
+  blockinfile:
+    path: /etc/modules-load.d/containerd.conf 
+    block: |
+        overlay
+        br_netfilter
+
+- name: Containerd configuration
+  shell: "{{ item }}"
+  with_items: 
+    - containerd config default | tee /etc/containerd/config.toml
+    - sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+  notify: restart containerd
+  tags: ['skip_ansible_lint']
+
+- name: Create a empty file for kubernetes sysctl params.
+  copy:
+    content: ""
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    force: no
+
+- name: Configure sysctl params for Kubernetes.
+  lineinfile:
+    path: /etc/sysctl.d/99-kubernetes-cri.conf 
+    line: "{{ item }}"
+  with_items:
+    - 'net.bridge.bridge-nf-call-iptables  = 1'
+    - 'net.ipv4.ip_forward                 = 1'
+    - 'net.bridge.bridge-nf-call-ip6tables = 1'
+
+- name: Apply sysctl params without reboot.
+  command: sysctl --system
+
+- name: Add apt-key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg 
+    state: present
+
+- name: Creating /etc/apt/sources.list.d/kubernetes.list
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    filename: kubernetes
+    mode: 0600
+
+- name: Update APT
+  apt:
+    update_cache: yes
+
+- name: Install kubelet kubeadm kubectl
+  apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+
+- name: Disabled update kubelet kubeadm kubectl
+  shell: apt-mark hold kubelet kubeadm kubectl
+
+- name: Pause for 1 minutes to build app cache
+  pause:
+    minutes: 1
+
+- name: Enable service kubelet, and enable persistently
+  service: 
+    name: kubelet
+    enabled: yes
+
+- name: Reboot all the kubernetes nodes.
+  reboot:
+    msg: "Reboot initiated by Ansible"
+    connect_timeout: 5
+    reboot_timeout: 3600
+    pre_reboot_delay: 0
+    post_reboot_delay: 30
+    test_command: whoami

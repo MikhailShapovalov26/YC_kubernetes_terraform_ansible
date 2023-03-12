@@ -7,14 +7,6 @@ locals {
       ]
     }
   }
-  load_balance = {
-    "load_balance" = {
-      type_balance = [
-        { name = "balancekuber", zone = local.zone, subnet_id = element(compact(one(module.vpcs.*.vpcs.subnet_id)), 0), name_listen = "namelisten", },
-      ]
-
-    }
-  }
   family         = "fd8autg36kchufhej85b"
   user_data_file = "demo-instance-user-data-0.yaml"
   zone_subnet    = element(compact(one(module.vpcs.*.vpcs.subnet_zone)), 0)
@@ -26,18 +18,35 @@ locals {
       ]
     }
   }
-  Foo       = element(compact(one(module.instancies[*].instancies.external_ip_address)), 0)
-  Foo_kuber = one(module.application_load_balancer.*.load_balance.external_ip)
+  # Foo       = element(compact(one(module.instancies[*].instancies.external_ip_address)), 0)
+  Foo = element(one(module.yc_alb.*.targets.yandex_alb_load_balancer),0)
+  # Foo_kuber = one(module.yc_alb.*.load_balance.external_ip)
   zones = {
     "msh762.ru" = {
       name   = "msh762-zone",
       public = true,
       records = [
         { name = "", type = "A", ttl = 30, records = [local.Foo, ] },
-        { name = "*.infra", type = "A", ttl = 30, records = [local.Foo_kuber, ] },
+        { name = "*.infra", type = "A", ttl = 30, records = [local.Foo, ] },
         { name = "gitlab", type = "A", ttl = 30, records = [local.Foo, ] },
       ]
     }
   }
   member_ingress = ["alb.editor", "vpc.publicAdmin", "certificate-manager.certificates.downloader", "compute.viewer"]
+
+  targets = {
+    "targets" = {
+      type_targets = [
+        {subnet_id = element(compact(one(module.vpcs.*.vpcs.subnet_id)), 0), ip_address = "192.168.0.32",},
+      ]
+    }
+  }
+    load_balance = {
+    "load_balance" = {
+      type_balance = [
+        { name = "balancekuber", zone = local.zone, subnet_id = element(compact(one(module.vpcs.*.vpcs.subnet_id)), 0), name_listen = "namelisten", },
+      ]
+
+    }
+  }
 }

@@ -1,0 +1,16 @@
+---
+# - name: Install containerd
+#   hosts: kuber
+#   become: yes
+#   become_user: root
+#   remote_user: inspector
+#   roles:
+#     - containerd.io
+
+- name: Install kubernetes K8s
+  hosts: kuber
+  become: yes
+  become_user: root
+  remote_user: inspector
+  roles:
+    - kube-mnn

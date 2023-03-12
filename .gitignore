@@ -8,3 +8,4 @@ sa-key.json
 defaults
 *.json
 terraform.tfstate.backup
+hosts*

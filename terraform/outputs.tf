@@ -33,14 +33,25 @@ output "json_key" {
   sensitive = true
 }
 
+# output "ip_kuber" {
+#   value = module.kubernetes_node_group.ip_adress
+# }
 output "ip_kuber" {
-  value = module.kubernetes_node_group.ip_adress
+  value = module.kubernetes_node_group.*
 }
-output "external_ip_balancer" {
-  value = one(module.application_load_balancer.*.load_balance.external_ip)
+# output "external_ip_balancer" {
+#   value = one(module.application_load_balancer.*.load_balance.external_ip)
 
+# }
+output "external_ip_balancer" {
+  value = element(one(module.yc_alb.*.targets.yandex_alb_load_balancer),0)
 }
 output "test-peretest" {
   value = element(compact(one(module.instancies[*].instancies.external_ip_address)), 0)
-
+}
+# output "group" {
+#   value = module.alb_target_group.targets.backend_group
+# }
+output "my_node_group" {
+  value = module.kubernetes_node_group.my_node_group
 }
